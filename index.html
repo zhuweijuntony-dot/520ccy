@@ -25,14 +25,14 @@
             z-index: 1;
         }
 
-        /* 顶部物理距离测算 UI 面板 */
+        /* 顶部物理距离测算 UI 面板 —— 已优化大屏宽度 */
         #ui-overlay {
             position: absolute;
             top: 50%;                    
             left: 50%;                   
             transform: translate(-50%, -50%); 
             width: 85%;
-            max-width: 380px;            
+            max-width: 520px;            
             z-index: 10;
             text-align: center;
             pointer-events: none;
@@ -83,11 +83,12 @@
             display: block;
         }
         
-        /* 底部闪烁提示 */
+        /* 底部闪烁提示 —— 完美大屏居中 */
         .click-hint {
             position: absolute;
             bottom: 6%;             
-            left: 70%;              
+            left: 50%;              
+            transform: translateX(-50%);             
             white-space: nowrap;    
             font-size: 12px;        
             letter-spacing: 2px;    
@@ -96,14 +97,14 @@
             animation: flash 1.5s infinite alternate;
         }
 
-        /* 核心弹出告白多页卡片 */
+        /* 核心弹出告白多页卡片 —— 完美适配手机与平板双端尺寸 */
         #love-card {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 85%;
-            max-width: 380px;
+            max-width: 380px; 
             background: rgba(10, 10, 10, 0.95);
             border: 1px solid #ff4d6d;
             border-radius: 15px;
@@ -113,6 +114,18 @@
             display: none; 
             text-align: left;
             box-sizing: border-box;
+        }
+
+        /* ✨ 媒体查询：当在大屏设备（如 iPad、平板或电脑）打开时，全局优化卡片和所有页面的字体样式 ✨ */
+        @media screen and (min-width: 600px) {
+            #love-card {
+                max-width: 440px; /* 适当放宽卡片，大屏视觉更舒适舒展 */
+                padding: 28px;    
+            }
+            .quote-text {
+                font-size: 15px !important; /* 统一小幅放大字体，增强大屏可读性 */
+                line-height: 1.7 !important;
+            }
         }
 
         .card-title {
@@ -242,7 +255,7 @@
             top: 1px;
         }
 
-        /* ✨ 新增：第四页专属 ZWJ 爱心 CCY 浪漫数码墙样式 ✨ */
+        /* 第四页专属 ZWJ 爱心 CCY 浪漫数码墙样式 */
         .neon-heart-wrapper {
             text-align: center;
             padding: 30px 0;
@@ -265,7 +278,6 @@
             font-size: 36px;
             margin: 0 15px;
             text-shadow: 0 0 20px #ff1a43, 0 0 40px #ff1a43;
-            /* 脉冲跳动通过 JS 的 updateBpm 动态控制动画频率 */
         }
         
         @keyframes flash {
@@ -321,7 +333,6 @@
 
     <div id="love-card">
         
-        <!-- 第一页：初始界面 -->
         <div class="card-page active" id="page-1">
             <div class="card-title">致：陈承玉小姐 ❤️</div>
             
@@ -342,8 +353,8 @@
                 <span class="comment" style="font-size:12px; display:block; margin-bottom:6px; line-height:1.4;">
                     // 监测到陈承玉小姐进入 system，朱蔚骏的心跳频率已自动超频～～
                 </span>
-                我以前总觉得自己运气平平，直到遇见你，我才明白老天把最好的都留在了后面～真的～<br>
-                文字其实挺苍白的，形容不出你万分之一的好！～我只知道，每次听到你声音，我心里所有乱千八糟的烦恼瞬间就全没了～
+                我以前总觉得自己运气平平，直到遇见你，我才明白老天把最好的都留在了后面～真的～<br><br>
+                文字其实挺苍白的，形容不出你万分之一的好！～我只知道，每次听到你声音，我心里所有乱七八糟的烦恼瞬间就全没了～
             </div>
             
             <div class="card-nav">
@@ -351,12 +362,11 @@
             </div>
         </div>
 
-        <!-- 第二页：习惯日志 -->
         <div class="card-page" id="page-2">
             <div class="card-title">编组 :: HABIT_LOG</div>
             <div class="quote-text">
                 <span class="comment" style="font-size:12px; display:block; margin-bottom:12px; line-height:1.4;">
-                    // 正在扫描底层行为数据... 我偷偷存下的那些心中的你：
+                    // 正在扫描底层行为 data... 我偷偷存下的那些心中的你：
                 </span>
                 <div class="habit-item"><b style="color: #ff4d6d;">独一无二的反差可爱：</b>你在别处是谦虚的小人，但在我这里，你是拿走我全部心跳指令的唯一指挥官！～</div>
                 <div class="habit-item"><b style="color: #ff4d6d;">让人无法抗拒的笑声：</b>每一次在语音里听到你笑得毫无防备的样子，那声音就像穿过1878.9公里的解药，能瞬间治好我一整天的疲惫！～</div>
@@ -368,7 +378,6 @@
             </div>
         </div>
 
-        <!-- 第三页：核心真情表白 -->
         <div class="card-page" id="page-3">
             <div class="card-title">核心 :: CORE_CONFESS</div>
             <div class="quote-text" style="margin-bottom: 12px;">
@@ -403,9 +412,6 @@
             </div>
         </div>
 
-        <!-- ==========================================
-             ✨ 全新第四页：ZWJ 爱心 CCY 永恒双向锁定 ✨
-             ========================================== -->
         <div class="card-page" id="page-4">
             <div class="card-title">密钥 :: STABLE_LOCK</div>
             
@@ -425,7 +431,6 @@
             </div>
         </div>
 
-        <!-- 纪念日页脚（通用底层） -->
         <div class="anniversary">
             今天是我们在一起的第 <span id="days-count" style="font-size: 24px; font-weight: bold; color:#ff4d6d;">--</span> 天
         </div>
@@ -541,11 +546,9 @@
             currentBpm = Math.floor(currentBpm * 0.8 + targetBpm * 0.2); 
             bpmEl.innerText = currentBpm + " bpm";
             
-            // 计算单次跳动周期（秒）
             const duration = 60 / currentBpm; 
             bpmEl.style.animation = `pulse ${duration}s infinite alternate`;
             
-            // ✨ 梦幻联动：让第四页的中心爱心与心率引擎达成绝对的同频共振跳动 ✨
             if(pulsingHeartEl) {
                 pulsingHeartEl.style.animation = `pulse ${duration}s infinite alternate`;
             }
