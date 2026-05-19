@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LOVE :: MATRIX :: CALCULATION</title>
+    <style>
+        /* 基础样式重置与优雅的页面平滑字体 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'STXingkai', '华文行楷', 'Xingkai SC', 'KaiTi', monospace;
+            color: #ffb3c1;
+        }
+
+        /* 矩阵画布置于底层 */
+        #matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* 顶部物理距离测算 UI 面板 */
+        #ui-overlay {
+            position: absolute;
+            top: 50%;                    
+            left: 50%;                   
+            transform: translate(-50%, -50%); 
+            width: 85%;
+            max-width: 840px;            
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 25px 0;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 179, 193, 0.3);
+            box-shadow: 0 0 15px rgba(255, 77, 109, 0.2);
+        }
+
+        .location-title {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .distance-display {
+            font-size: 32px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #ff4d6d;
+            text-shadow: 0 0 10px #ff4d6d;
+        }
+
+        .code-snippet {
+            font-size: 16px;
+            text-align: left;
+            display: inline-block;
+            color: #ff758f;
+            line-height: 1.6;
+            padding: 0 10px;
+        }
+
+        .comment {
+            color: #a3b18a;
+        }
+        
+        .code-block {
+            padding-left: 15px;
+            margin-top: 8px;
+            text-align: left; 
+        }
+
+        .code-indent {
+            padding-left: 6ch;   
+            line-height: 1.9;    
+            display: block;
+        }
+        
+        /* 底部闪烁提示 */
+        .click-hint {
+            position: absolute;
+            bottom: 6%;             
+            left: 70%;              
+            white-space: nowrap;    
+            font-size: 12px;        
+            letter-spacing: 2px;    
+            color: rgba(255, 179, 193, 0.75);
+            z-index: 10;
+            animation: flash 1.5s infinite alternate;
+        }
+
+        /* 核心弹出告白多页卡片 */
+        #love-card {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            max-width: 840px;
+            background: rgba(10, 10, 10, 0.95);
+            border: 1px solid #ff4d6d;
+            border-radius: 15px;
+            padding: 20px; 
+            box-shadow: 0 0 25px rgba(255, 77, 109, 0.5);
+            z-index: 20;
+            display: none; 
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff4d6d;
+            text-align: center;
+            margin-bottom: 12px;
+            text-shadow: 0 0 5px #ff4d6d;
+        }
+
+        /* 女朋友照片样式 */
+        .card-photo-wrapper {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .card-photo {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%; 
+            object-fit: cover;  
+            border: 2px solid #ff4d6d;
+            box-shadow: 0 0 12px rgba(255, 77, 109, 0.6);
+        }
+
+        /* 实时心电图面板样式 */
+        .ecg-panel {
+            background: rgba(20, 5, 10, 0.6);
+            border: 1px solid rgba(255, 77, 109, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #ecg-canvas {
+            width: 60%;
+            height: 45px;
+            background: transparent;
+        }
+
+        .ecg-data {
+            width: 35%;
+            font-family: monospace;
+            font-size: 11px;
+            color: #ff758f;
+            line-height: 1.4;
+        }
+
+        .ecg-bpm {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff1a43;
+            text-shadow: 0 0 5px #ff1a43;
+            transition: color 0.5s ease;
+        }
+
+        .quote-text {
+            font-size: 14px;
+            color: #fff;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            text-align: justify;
+            font-family: 'STXingkai', '华文行楷', 'Xingkai SC', 'KaiTi', monospace;
+        }
+
+        .anniversary {
+            font-size: 15px;
+            color: #ffb3c1;
+            text-align: center;
+            border-top: 1px dashed rgba(255, 179, 193, 0.4);
+            padding-top: 12px;
+            margin-bottom: 10px;
+        }
+
+        .card-page {
+            display: none; 
+        }
+        .card-page.active {
+            display: block; 
+        }
+
+        /* 大幅强化后的多页控制按钮样式 */
+        .card-nav {
+            text-align: right;
+            margin-top: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .nav-btn {
+            background: rgba(255, 77, 109, 0.1);
+            border: 1px solid #ff4d6d;
+            color: #ffffff;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 77, 109, 0.5), inset 0 0 5px rgba(255, 77, 109, 0.2);
+            animation: btnPulse 1.8s infinite ease-in-out;
+        }
+        
+        .nav-btn:hover {
+            background: #ff4d6d;
+            color: #fff;
+            box-shadow: 0 0 18px #ff4d6d, inset 0 0 3px rgba(255, 255, 255, 0.5);
+            transform: scale(1.03);
+        }
+
+        .habit-item {
+            position: relative;
+            padding-left: 15px;
+            margin-bottom: 8px;
+        }
+        .habit-item::before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            color: #ff4d6d;
+            font-size: 10px;
+            top: 1px;
+        }
+
+        /* ✨ 新增：第四页专属 ZWJ 爱心 CCY 浪漫数码墙样式 ✨ */
+        .neon-heart-wrapper {
+            text-align: center;
+            padding: 30px 0;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 26px;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        .neon-name {
+            color: #ffffff;
+            text-shadow: 0 0 8px #ffffff;
+        }
+        
+        .neon-heart {
+            display: inline-block;
+            color: #ff1a43;
+            font-size: 36px;
+            margin: 0 15px;
+            text-shadow: 0 0 20px #ff1a43, 0 0 40px #ff1a43;
+            /* 脉冲跳动通过 JS 的 updateBpm 动态控制动画频率 */
+        }
+        
+        @keyframes flash {
+            from { opacity: 0.3; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            from { transform: scale(0.94); opacity: 0.8; }
+            to { transform: scale(1.06); opacity: 1; }
+        }
+
+        @keyframes btnPulse {
+            0% { 
+                box-shadow: 0 0 8px rgba(255, 77, 109, 0.4);
+                border-color: rgba(255, 77, 109, 0.8);
+            }
+            50% { 
+                box-shadow: 0 0 18px rgba(255, 77, 109, 0.8);
+                border-color: rgba(255, 26, 67, 1);
+                color: #ffb3c1;
+            }
+            100% { 
+                box-shadow: 0 0 8px rgba(255, 77, 109, 0.4);
+                border-color: rgba(255, 77, 109, 0.8);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix-canvas"></canvas>
+
+    <audio id="bgm" src="bgm.mp3" loop></audio>
+
+    <div id="ui-overlay">
+        <div class="location-title">上海 ⇄ 三亚 </div>
+        <div class="distance-display">
+            DISTANCE = <span id="dist-km">1900+</span> KM
+        </div>
+        <div class="code-snippet">
+            <span class="comment" style="display: block; text-align: center; margin-bottom: 5px;">...正在尝试降低物理距离带来的信号损耗...</span> 
+            <div class="code-block">
+                while (distance > 0) {<br>
+                <div class="code-indent">
+                    ZWJ_heart.setPosition(CCY_location);<br>
+                    <span class="comment">// 物理距离拦截不住我正在超光速飞奔向你的信号 📡~</span><br>
+                    <span class="comment">// 无论信号如何损耗，在对的人出现之前，你就是我这辈子雷打不动的唯一密钥 🔒~</span><br>
+                    <span class="comment">// 网页里我用代码锁住了爱意，现实里我只想下一次见面时，把你死死搂进怀里不放开 ❤️</span><br>
+                </div>
+                }
+            </div> </div>     </div>         <div id="click-hint" class="click-hint">—— 点击屏幕 运行核心同步程序 ——</div>
+
+    <div id="love-card">
+        
+        <!-- 第一页：初始界面 -->
+        <div class="card-page active" id="page-1">
+            <div class="card-title">致：陈承玉小姐 ❤️</div>
+            
+            <div class="card-photo-wrapper">
+                <img class="card-photo" src="xintiao.png" alt="承玉的照片">
+            </div>
+
+            <div class="ecg-panel">
+                <canvas id="ecg-canvas"></canvas>
+                <div class="ecg-data">
+                    <div>SYS_STATUS: <span style="color:#64dfdf;">OVERLOAD</span></div>
+                    <div>HEART_RATE:</div>
+                    <div id="bpm-display" class="ecg-bpm">136 bpm</div>
+                </div>
+            </div>
+
+            <div class="quote-text">
+                <span class="comment" style="font-size:12px; display:block; margin-bottom:6px; line-height:1.4;">
+                    // 监测到陈承玉小姐进入 system，朱蔚骏的心跳频率已自动超频～～
+                </span>
+                我以前总觉得自己运气平平，直到遇见你，我才明白老天把最好的都留在了后面～真的～<br><br>
+                文字其实挺苍白的，形容不出你万分之一的好！～我只知道，每次听到你声音，我心里所有乱千八糟的烦恼瞬间就全没了～
+            </div>
+            
+            <div class="card-nav">
+                <button class="nav-btn" onclick="switchPage(2)">EXECUTE: HABIT_LOG >></button>
+            </div>
+        </div>
+
+        <!-- 第二页：习惯日志 -->
+        <div class="card-page" id="page-2">
+            <div class="card-title">编组 :: HABIT_LOG</div>
+            <div class="quote-text">
+                <span class="comment" style="font-size:12px; display:block; margin-bottom:12px; line-height:1.4;">
+                    // 正在扫描底层行为数据... 我偷偷存下的那些心中的你：
+                </span>
+                <div class="habit-item"><b style="color: #ff4d6d;">独一无二的反差可爱：</b>你在别处是谦虚的小人，但在我这里，你是拿走我全部心跳指令的唯一指挥官！～</div>
+                <div class="habit-item"><b style="color: #ff4d6d;">让人无法抗拒的笑声：</b>每一次在语音里听到你笑得毫无防备的样子，那声音就像穿过1878.9公里的解药，能瞬间治好我一整天的疲惫！～</div>
+                <div class="habit-item"><b style="color: #ff4d6d;">不可替代的专属默契：</b>异地恋很难，但最幸运的是每次我分享的日常与过往，你总能接得住～你那边的回音总能让我觉得，我们其实一直都在同一个频率上～那种踏实感，就是我最大的底气！～</div>
+                <div class="habit-item"><b style="color: #ff4d6d;">由衷的欣赏与着迷：</b>除了可爱，你认真努力起来的样子、你的聪明和通透，才是我真正陷进去的原因～看着这么优秀的你，我总是忍不住想，老天到底是对我有多偏心，才会把你带到我的世界里来！～</div>
+            </div>
+            <div class="card-nav">
+                <button class="nav-btn" onclick="switchPage(3)">EXECUTE: CORE_CONFESS >></button>
+            </div>
+        </div>
+
+        <!-- 第三页：核心真情表白 -->
+        <div class="card-page" id="page-3">
+            <div class="card-title">核心 :: CORE_CONFESS</div>
+            <div class="quote-text" style="margin-bottom: 12px;">
+                <span class="comment" style="font-size:12px; display:block; margin-bottom:12px; line-height:1.4;">
+                    // 终极不可逆进程：[核心数据完整解析]
+                </span>
+                隔着屏幕说这话会不会显得太轻~但我的心跳频率骗不了人～<br>
+                不管是深夜还是早上7点的闹钟，我想的都是你！～<br>
+                我喜欢你啊~陈承玉小姐~🌹<br>
+                not 网恋那种口嗨，是那种想把生活里的每一件小事都分享给你，想一直护着你这个软肋的喜欢～<br>
+                认真，超认真，超超级认真，超超超级认真～
+            </div>
+            <div class="quote-text">
+                <span class="comment" style="font-size:11px; display:block; margin-bottom:8px; line-height:1.3;">
+                    // [待执行的未来清单 FUTURE_TASK]
+                </span>
+                <div class="habit-item"><b>终结异地长跑：</b>下次见面的第一秒，我就要真实地、死死地把你搂进怀里，再也不放开。</div>
+                <div class="habit-item">
+                    <b>带你去踏遍每一张地图：</b>以后...
+                    <br><br>
+                    我们去爬山，去滑雪，去游泳，去潜水，去攀岩；
+                    <br>
+                    我们一起去大阪买斑点海豹公仔，去四川买大熊猫公仔；
+                    <br>
+                    我们去重庆吃九宫格，去汕头吃生腌，去广东喝甜汤，去云南吃菌子，去日本吃和果子，去北二外吃食堂...
+                    <br><br>
+                    在每个地方都留下属于我们的浪漫密钥～我想张开双臂，紧紧地把你搂进怀里，听着我们重叠的心跳，在漫天樱花里，慢慢地陪你走向属于我们的永远～❤️
+                </div>
+            </div>
+            <div class="card-nav">
+                <button class="nav-btn" onclick="switchPage(4)">LOCK_SYSTEM >></button>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             ✨ 全新第四页：ZWJ 爱心 CCY 永恒双向锁定 ✨
+             ========================================== -->
+        <div class="card-page" id="page-4">
+            <div class="card-title">密钥 :: STABLE_LOCK</div>
+            
+            <div class="neon-heart-wrapper">
+                <span class="neon-name">ZWJ</span>
+                <span id="pulsing-heart" class="neon-heart">❤️</span>
+                <span class="neon-name">CCY</span>
+            </div>
+
+            <div class="quote-text" style="text-align: center; font-size: 13px;">
+                <span class="comment" style="display: block; margin-bottom: 5px;">// 核心校验通过，双向指令集已永久存盘～</span>
+                心心相印，指令锁定～<br>无论相隔多远，程序后台永远为你运行！～
+            </div>
+
+            <div class="card-nav" style="text-align: center; margin-top: 15px;">
+                <button class="nav-btn" onclick="switchPage(1)">↩ RETURN_HOME</button>
+            </div>
+        </div>
+
+        <!-- 纪念日页脚（通用底层） -->
+        <div class="anniversary">
+            今天是我们在一起的第 <span id="days-count" style="font-size: 24px; font-weight: bold; color:#ff4d6d;">--</span> 天
+        </div>
+    </div>
+
+    <script>
+        // 1. 经纬度与日期配置
+        const shanghai = { lon: 121.4737, lat: 31.2304 }; 
+        const sanya = { lon: 109.5119, lat: 18.2528 };   
+        const anniversary_date = new Date(2026, 4, 7); 
+
+        function getDistance(loc1, loc2) {
+            const R = 6371; 
+            const dLat = (loc2.lat - loc1.lat) * Math.PI / 180;
+            const dLon = (loc2.lon - loc1.lon) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(loc1.lat * Math.PI / 180) * Math.cos(loc2.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return (R * c).toFixed(1); 
+        }
+
+        // 2. 主画布配置
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.height = window.innerHeight;
+        canvas.width = window.innerWidth;
+        const chars ='ZWJCCY❤️5201314';
+        const charArr = chars.split('');
+        const font_size = 14;
+        const columns = canvas.width / font_size;
+        const drops = Array(Math.floor(columns)).fill(1);
+        let isHeartMode = false; 
+
+        // 3. 动态樱花雨
+        const petCount = 65; 
+        let sakuraArray = [];
+        class Sakura {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height;
+                this.r = Math.random() * 4 + 3; 
+                this.d = Math.random() * petCount;
+                this.s = Math.random() * 1.2 + 0.8; 
+                this.w = Math.random() * 0.5 - 0.2; 
+                this.angle = Math.random() * 360;   
+                this.rotateSpeed = Math.random() * 1 - 0.5; 
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle * Math.PI / 180);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.r * 1.4, this.r, 0, 0, 2 * Math.PI);
+                let gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.r * 1.4);
+                gradient.addColorStop(0, 'rgba(255, 182, 193, 0.95)'); 
+                gradient.addColorStop(0.8, 'rgba(255, 105, 180, 0.75)'); 
+                gradient.addColorStop(1, 'rgba(255, 77, 109, 0)');     
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.restore();
+            }
+            update() {
+                this.y += this.s; 
+                this.x += Math.sin(this.d) * 0.4 + this.w; 
+                this.angle += this.rotateSpeed; 
+                if (this.y > canvas.height || this.x > canvas.width || this.x < -20) {
+                    this.x = Math.random() * canvas.width;
+                    this.y = -20;
+                }
+                this.d += 0.01;
+            }
+        }
+        function initSakura() {
+            sakuraArray = [];
+            for (let i = 0; i < petCount; i++) sakuraArray.push(new Sakura());
+        }
+
+        // 4. 统一渲染循环
+        function runEngine() {
+            if (!isHeartMode) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffb3c1'; 
+                ctx.font = font_size + 'px arial';
+                for (let i = 0; i < drops.length; i++) {
+                    const text = charArr[Math.floor(Math.random() * charArr.length)];
+                    ctx.fillText(text, i * font_size, drops[i] * font_size);
+                    if (drops[i] * font_size > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+            } else {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < sakuraArray.length; i++) {
+                    sakuraArray[i].draw();
+                    sakuraArray[i].update();
+                }
+            }
+        }
+
+        // 5. 实时心电图与动态数值波动
+        const ecgCanvas = document.getElementById('ecg-canvas');
+        const ecgCtx = ecgCanvas.getContext('2d');
+        const bpmEl = document.getElementById('bpm-display');
+        const pulsingHeartEl = document.getElementById('pulsing-heart');
+        let ecgX = 0;
+        let points = [];
+        let currentBpm = 136;
+
+        function updateBpm() {
+            if (!isHeartMode) return;
+            const targetBpm = Math.floor(Math.random() * (167 - 130 + 1)) + 130;
+            currentBpm = Math.floor(currentBpm * 0.8 + targetBpm * 0.2); 
+            bpmEl.innerText = currentBpm + " bpm";
+            
+            // 计算单次跳动周期（秒）
+            const duration = 60 / currentBpm; 
+            bpmEl.style.animation = `pulse ${duration}s infinite alternate`;
+            
+            // ✨ 梦幻联动：让第四页的中心爱心与心率引擎达成绝对的同频共振跳动 ✨
+            if(pulsingHeartEl) {
+                pulsingHeartEl.style.animation = `pulse ${duration}s infinite alternate`;
+            }
+            
+            setTimeout(updateBpm, 800 + Math.random() * 500);
+        }
+
+        function initEcg() {
+            ecgCanvas.width = ecgCanvas.offsetWidth;
+            ecgCanvas.height = ecgCanvas.offsetHeight;
+            points = Array(ecgCanvas.width).fill(ecgCanvas.height / 2);
+            animateEcg();
+            updateBpm();
+        }
+
+        function animateEcg() {
+            if (!isHeartMode) return;
+            requestAnimationFrame(animateEcg);
+            ecgCtx.clearRect(0, 0, ecgCanvas.width, ecgCanvas.height);
+            points.shift();
+            
+            const speedFactor = currentBpm / 136;
+            const t = (ecgX * speedFactor) % 60;
+            const mid = ecgCanvas.height / 2;
+            let y = mid;
+            if (t > 10 && t < 13) y = mid - (t - 10) * 3;          
+            else if (t >= 13 && t < 15) y = mid;                        
+            else if (t === 15) y = mid + 6;                            
+            else if (t > 15 && t <= 17) y = mid - (t - 15) * 18;        
+            else if (t > 17 && t <= 19) y = mid - 30 + (t - 17) * 22;   
+            else if (t > 19 && t <= 21) y = mid + 14 - (t - 19) * 7;    
+            else if (t > 25 && t < 32) y = mid - Math.sin((t - 25) * Math.PI / 7) * 5; 
+            
+            points.push(y);
+            ecgX++;
+
+            ecgCtx.beginPath();
+            ecgCtx.strokeStyle = '#ff4d6d';
+            ecgCtx.lineWidth = 2;
+            for (let i = 0; i < points.length; i++) {
+                if (i === 0) ecgCtx.moveTo(i, points[i]);
+                else ecgCtx.lineTo(i, points[i]);
+            }
+            ecgCtx.stroke();
+        }
+
+        // 6. 翻页
+        function switchPage(pageNum) {
+            document.querySelectorAll('.card-page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageNum).classList.add('active');
+            if(pageNum === 1) setTimeout(initEcg, 50);
+        }
+
+        // 7. 点击交互
+        window.addEventListener('click', function(e) {
+            if (document.getElementById('love-card').contains(e.target)) return;
+            if (!isHeartMode) {
+                isHeartMode = true;
+                initSakura(); 
+                document.getElementById('love-card').style.display = 'block';
+                document.getElementById('ui-overlay').style.display = 'none';
+                document.getElementById('click-hint').style.display = 'none';
+                initEcg(); 
+                document.getElementById('bgm').play().catch(() => {});
+            }
+        });
+
+        function init() {
+            document.getElementById('dist-km').innerText = getDistance(shanghai, sanya);
+            const days = Math.floor((new Date().getTime() - anniversary_date.getTime()) / (1000 * 3600 * 24)) + 1; 
+            document.getElementById('days-count').innerText = days;
+            setInterval(runEngine, 33);
+        }
+        init();
+    </script>
+</body>
+</html>
